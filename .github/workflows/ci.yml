@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: lint + build + test (100% on internal/b3sum)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+          cache: true
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task ci
+
+  simd:
+    name: experimental SIMD (amd64, GOEXPERIMENT=simd)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          check-latest: true
+          cache: true
+      # Build and test the experimental SIMD build of the BLAKE3 dependency on a
+      # real AVX2 runner. Not held to the 100% gate (the pure-Go ci job above is).
+      - name: Test + build under GOEXPERIMENT=simd
+        env:
+          GOEXPERIMENT: simd
+        run: |
+          go vet ./...
+          go test -race ./...
+          go build ./cmd/b3sum

@@ -1,0 +1,4 @@
+cover.out
+*.test
+*.prof
+/b3sum

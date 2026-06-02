@@ -1,0 +1,29 @@
+version: '3'
+
+tasks:
+  build:
+    desc: "Build the b3sum binary"
+    cmds:
+      - go build ./cmd/b3sum
+
+  test:
+    desc: "Run tests with coverage and enforce 100% on internal/b3sum"
+    cmds:
+      - go test -race -coverpkg=./internal/... -coverprofile=cover.out ./...
+      - go tool cover -func=cover.out
+      - |
+        pct=$(go tool cover -func=cover.out | awk '/^total:/ {sub(/%/,"",$3); print $3}')
+        echo "internal/b3sum coverage: ${pct}%"
+        awk "BEGIN{ exit !(${pct} >= 100.0) }" || { echo "coverage ${pct}% < 100.0%"; exit 1; }
+
+  lint:
+    desc: "Vet the module"
+    cmds:
+      - go vet ./...
+
+  ci:
+    desc: "Run lint + build + test (used by the GitHub Actions workflow)"
+    cmds:
+      - task: lint
+      - task: build
+      - task: test

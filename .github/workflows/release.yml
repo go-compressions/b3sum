@@ -1,0 +1,71 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # Portable, pure-Go (scalar) binaries — the recommended downloads.
+  stable:
+    name: stable ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: darwin,  goarch: arm64 }
+          - { goos: windows, goarch: amd64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          ext=""; [ "$GOOS" = windows ] && ext=".exe"
+          out="b3sum-${{ github.ref_name }}-${GOOS}-${GOARCH}${ext}"
+          go build -trimpath -ldflags "-s -w" -o "$out" ./cmd/b3sum
+          echo "ART=$out" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ART }}
+          path: ${{ env.ART }}
+
+  # Experimental SIMD build (amd64, GOEXPERIMENT=simd, Go 1.26+). Bit-identical
+  # output; faster on large files; falls back to scalar without AVX2. Provided
+  # for testing — NOT the default download. (arm64 SIMD needs Go 1.27; add when
+  # released.)
+  simd-experimental:
+    name: simd-experimental linux/amd64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          check-latest: true
+      - name: Build (GOEXPERIMENT=simd)
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+          GOEXPERIMENT: simd
+        run: |
+          out="b3sum-${{ github.ref_name }}-linux-amd64-simd-experimental"
+          go build -trimpath -ldflags "-s -w" -o "$out" ./cmd/b3sum
+          echo "ART=$out" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ART }}
+          path: ${{ env.ART }}
