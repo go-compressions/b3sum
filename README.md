@@ -35,22 +35,37 @@ b3sum --check [FILE...]                     # verify checksums read from FILE(s)
   exits non-zero on any mismatch.
 - `--no-names` — print only the digest.
 
-## Performance / experimental SIMD
+## Performance
 
 `b3sum` hashes each file in one shot, so it rides the underlying library's
-multi-core kernels. The library also has an **experimental, cgo-free SIMD**
-path (Go's `simd/archsimd` intrinsics) that helps on large files. To build an
-optimized binary for testing:
+multi-core SIMD kernels. As of blake3 v0.4.0 the **default build is
+SIMD-accelerated on every 64-bit target** — cgo-free, no `GOEXPERIMENT` — using
+[go-asmgen](https://github.com/go-asmgen/asmgen)-generated assembly: NEON
+(arm64), SSE2 (amd64), LSX (loong64), RVV (riscv64). It is bit-identical to the
+scalar path (verified against the official BLAKE3 vectors) and falls back to
+scalar for small inputs.
+
+Hashing a 1 GiB file (Apple Silicon, page cache warm):
+
+| build | time | throughput | speedup |
+|---|---|---|---|
+| scalar (blake3 ≤ v0.3.0) | ~0.51 s | ~2.0 GB/s | 1.0x |
+| **SIMD (blake3 ≥ v0.4.0, default)** | **~0.34 s** | **~3.0 GB/s** | **~1.5x** |
+
+The underlying per-chunk kernel is ~3–4x faster than scalar; end-to-end b3sum
+gains less because of file I/O and the tree/parent hashing. No flags needed —
+just build or download the release binary.
+
+### Alternative: archsimd build
+
+The library also has a second SIMD implementation using Go's experimental
+`simd/archsimd` intrinsics (amd64 AVX2 on Go 1.26+, arm64 on Go 1.27+). A
+`…-simd-experimental` amd64 binary is published alongside the defaults for
+comparison:
 
 ```sh
-GOEXPERIMENT=simd go build ./cmd/b3sum      # Go 1.26+ amd64 (AVX2), Go 1.27+ arm64 (NEON)
+GOEXPERIMENT=simd go build ./cmd/b3sum
 ```
-
-The default release is the portable pure-Go (scalar) build; an
-`…-simd-experimental` amd64 binary is published alongside it for those who want
-to test the SIMD path. The SIMD path is bit-identical to scalar (verified
-against the official BLAKE3 vectors) and falls back to scalar on CPUs without
-the required instructions and for small inputs.
 
 ## License
 

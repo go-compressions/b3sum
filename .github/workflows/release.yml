@@ -9,7 +9,10 @@ permissions:
   contents: write
 
 jobs:
-  # Portable, pure-Go (scalar) binaries — the recommended downloads.
+  # Default binaries — SIMD-accelerated by default via blake3 v0.4.0's go-asmgen
+  # kernels (no GOEXPERIMENT, no cgo): NEON/SSE on arm64/amd64, LSX/RVV on
+  # loong64/riscv64. The loong64/riscv64 vector assembly needs Go 1.25+, so the
+  # whole matrix builds on the latest stable Go.
   stable:
     name: stable ${{ matrix.goos }}/${{ matrix.goarch }}
     runs-on: ubuntu-latest
@@ -18,6 +21,8 @@ jobs:
         include:
           - { goos: linux,   goarch: amd64 }
           - { goos: linux,   goarch: arm64 }
+          - { goos: linux,   goarch: loong64 }
+          - { goos: linux,   goarch: riscv64 }
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
           - { goos: windows, goarch: amd64 }
@@ -25,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: 'stable'
           check-latest: true
       - name: Build
         env:
@@ -42,10 +47,9 @@ jobs:
           name: ${{ env.ART }}
           path: ${{ env.ART }}
 
-  # Experimental SIMD build (amd64, GOEXPERIMENT=simd, Go 1.26+). Bit-identical
-  # output; faster on large files; falls back to scalar without AVX2. Provided
-  # for testing — NOT the default download. (arm64 SIMD needs Go 1.27; add when
-  # released.)
+  # Alternative SIMD build using Go's experimental archsimd intrinsics (amd64
+  # AVX2, GOEXPERIMENT=simd, Go 1.26+) — a different implementation from the
+  # default go-asmgen kernels above, kept for comparison. Bit-identical output.
   simd-experimental:
     name: simd-experimental linux/amd64
     runs-on: ubuntu-latest
