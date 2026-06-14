@@ -38,12 +38,15 @@ b3sum --check [FILE...]                     # verify checksums read from FILE(s)
 ## Performance
 
 `b3sum` hashes each file in one shot, so it rides the underlying library's
-multi-core SIMD kernels. As of blake3 v0.4.0 the **default build is
-SIMD-accelerated on every 64-bit target** — cgo-free, no `GOEXPERIMENT` — using
-[go-asmgen](https://github.com/go-asmgen/asmgen)-generated assembly: NEON
-(arm64), SSE2 (amd64), LSX (loong64), RVV (riscv64). It is bit-identical to the
-scalar path (verified against the official BLAKE3 vectors) and falls back to
-scalar for small inputs.
+multi-core SIMD kernels. As of blake3 **v0.5.0** the **default build is
+SIMD-accelerated on all six 64-bit targets** — cgo-free, no `GOEXPERIMENT` —
+using [go-asmgen](https://github.com/go-asmgen/asmgen)-generated assembly for the
+`mix4` round function: NEON (arm64), SSE2 (amd64), LSX (loong64), RVV (riscv64),
+VSX (ppc64le) and the vector facility (s390x, big-endian). It is bit-identical to
+the scalar path (verified against the official BLAKE3 vectors) and falls back to
+scalar for small inputs. b3sum inherits all six arches with no code change. The
+ppc64le and s390x paths are qemu-validated (correct + bit-identical); native
+throughput numbers on those two are pending hardware.
 
 Hashing a 1 GiB file (Apple Silicon, page cache warm):
 
