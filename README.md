@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/go-compressions/brand/main/social/go-compressions-b3sum.png" alt="go-compressions/b3sum" width="720"></p>
+
 # b3sum
 
 [![ci](https://github.com/go-compressions/b3sum/actions/workflows/ci.yml/badge.svg)](https://github.com/go-compressions/b3sum/actions/workflows/ci.yml)
