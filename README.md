@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/go-compressions/brand/main/social/go-compressions-b3sum.png" alt="go-compressions/b3sum" width="720"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/go-compressions/brand/main/social/go-compressions.png" alt="go-compressions/b3sum" width="720"></p>
 
 # b3sum
 
@@ -46,17 +46,9 @@ using [go-asmgen](https://github.com/go-asmgen/asmgen)-generated assembly for th
 `mix4` round function: NEON (arm64), SSE2 (amd64), LSX (loong64), RVV (riscv64),
 VSX (ppc64le) and the vector facility (s390x, big-endian). It is bit-identical to
 the scalar path (verified against the official BLAKE3 vectors) and falls back to
-scalar for small inputs. b3sum inherits all six arches with no code change.
-**ppc64le is now natively measured on real POWER10** (GCC Compile Farm, VSX, Go
-1.26.4, June 2026) — the underlying blake3 library's `mix4` runs ~4.5× scalar
-there. **riscv64 is now natively measured too** on a real SpacemiT X60 (RVV 1.0,
-a low-power in-order core — the only widely-available RVV silicon; GCC Compile
-Farm, Go 1.26.4, June 2026), where the library's `mix4` runs ~2.9× scalar; an
-out-of-order RVV core would likely do better. s390x stays qemu-validated for correctness only; native s390x throughput
-is pending (no GitHub-hosted IBM Z runner). The blake3 library is additionally
-build+test validated bit-exact on **ppc64 (big-endian)** on real POWER9 silicon
-(generic/scalar fallback) — **six SIMD targets, validated on seven
-architectures**. (These are library-level validations that b3sum inherits.)
+scalar for small inputs. b3sum inherits all six arches with no code change. The
+ppc64le and s390x paths are qemu-validated (correct + bit-identical); native
+throughput numbers on those two are pending hardware.
 
 Hashing a 1 GiB file (Apple Silicon, page cache warm):
 
