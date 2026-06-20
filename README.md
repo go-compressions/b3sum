@@ -49,7 +49,10 @@ the scalar path (verified against the official BLAKE3 vectors) and falls back to
 scalar for small inputs. b3sum inherits all six arches with no code change.
 **ppc64le is now natively measured on real POWER10** (GCC Compile Farm, VSX, Go
 1.26.4, June 2026) — the underlying blake3 library's `mix4` runs ~4.5× scalar
-there. s390x stays qemu-validated for correctness only; native s390x throughput
+there. **riscv64 is now natively measured too** on a real SpacemiT X60 (RVV 1.0,
+a low-power in-order core — the only widely-available RVV silicon; GCC Compile
+Farm, Go 1.26.4, June 2026), where the library's `mix4` runs ~2.9× scalar; an
+out-of-order RVV core would likely do better. s390x stays qemu-validated for correctness only; native s390x throughput
 is pending (no GitHub-hosted IBM Z runner). The blake3 library is additionally
 build+test validated bit-exact on **ppc64 (big-endian)** on real POWER9 silicon
 (generic/scalar fallback) — **six SIMD targets, validated on seven
