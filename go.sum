@@ -1,4 +1,2 @@
-github.com/go-compressions/blake3 v0.5.0 h1:iLi9ow20+QsXBv+J7+egg103Zvd5qwjEIiWZlwVMo7g=
-github.com/go-compressions/blake3 v0.5.0/go.mod h1:1I8Wr7GE7DaM3g8lJCJWwO7ipIl7AF6yrI6gHoRkHJo=
-github.com/go-compressions/blake3 v0.6.0 h1:BWqYJxvKX1o930y9Fchnkvpj0g90h+NZJH64VnXbITc=
-github.com/go-compressions/blake3 v0.6.0/go.mod h1:ocPCAaI5V+rbOALzK/T1lvN3gvwnhad+vXZBjTz+QhM=
+github.com/go-compressions/blake3 v0.7.0 h1:iQiaD77Sgpa1K8yHuGmmLrH4LlS/Cg/BX4U1jf1Zfyw=
+github.com/go-compressions/blake3 v0.7.0/go.mod h1:a5G2zZfGJuwUcIAUaNq7WU8+1cb9/1swCzlXO9GDS3k=
