@@ -50,33 +50,56 @@ jobs:
   # Alternative SIMD build using Go's experimental archsimd intrinsics (amd64
   # AVX2, GOEXPERIMENT=simd, Go 1.26+) — a different implementation from the
   # default go-asmgen kernels above, kept for comparison. Bit-identical output.
-  simd-experimental:
-    name: simd-experimental linux/amd64
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version: '1.26.x'
-          check-latest: true
-      - name: Build (GOEXPERIMENT=simd)
-        env:
-          GOOS: linux
-          GOARCH: amd64
-          CGO_ENABLED: '0'
-          GOEXPERIMENT: simd
-        run: |
-          out="b3sum-${{ github.ref_name }}-linux-amd64-simd-experimental"
-          go build -trimpath -ldflags "-s -w" -o "$out" ./cmd/b3sum
-          echo "ART=$out" >> "$GITHUB_ENV"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ${{ env.ART }}
-          path: ${{ env.ART }}
+  # ⛔ SET ASIDE until go-compressions/blake3#13 lands — see issue #13 here.
+  #
+  # This job pins Go 1.26.x on purpose: its whole subject is the Go 1.26 form of
+  # GOEXPERIMENT=simd. Raising go.mod to 1.27.1 put the module's floor above the
+  # toolchain the job exists to use, so it fails before building:
+  #
+  #   GOTOOLCHAIN: local
+  #   go: go.mod requires go >= 1.27.1 (running go 1.26.8; GOTOOLCHAIN=local)
+  #
+  # GOTOOLCHAIN: local is why that is VISIBLE rather than silent — without it go
+  # fetches 1.27.1 and builds something other than what this job claims to
+  # compare. Keep it when this comes back.
+  #
+  # It cannot be fixed here. Go 1.27's simd has no Uint32x8 at all: the
+  # fixed-lane types are gone, replaced by width-agnostic Uint32s plus
+  # VectorBitSize() and Emulated(), so the kernels need a PORT, not a rename.
+  # Restore this job, unchanged, once blake3 compiles under 1.27.
+  #
+  # simd-experimental:
+  #   name: simd-experimental linux/amd64
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v7
+  #     - uses: actions/setup-go@v7
+  #       with:
+  #         go-version: '1.26.x'
+  #         check-latest: true
+  #     - name: Build (GOEXPERIMENT=simd)
+  #       env:
+  #         GOOS: linux
+  #         GOARCH: amd64
+  #         CGO_ENABLED: '0'
+  #         GOEXPERIMENT: simd
+  #       run: |
+  #         out="b3sum-${{ github.ref_name }}-linux-amd64-simd-experimental"
+  #         go build -trimpath -ldflags "-s -w" -o "$out" ./cmd/b3sum
+  #         echo "ART=$out" >> "$GITHUB_ENV"
+  #     - uses: actions/upload-artifact@v7
+  #       with:
+  #         name: ${{ env.ART }}
+  #         path: ${{ env.ART }}
+  #
 
-  # Publish all built binaries as a GitHub Release on the tag.
   publish:
-    needs: [stable, simd-experimental]
+    # NOT simd-experimental. That job is described two blocks up as
+    # "kept for comparison", and a comparison must never be able to stop a
+    # release. It did: v0.2.0 and v0.3.0 were tagged, 8 of 9 jobs were
+    # green, publish was SKIPPED, and neither version has a GitHub release
+    # or a single binary. See issue #13.
+    needs: [stable]
     runs-on: ubuntu-latest
     permissions:
       contents: write
