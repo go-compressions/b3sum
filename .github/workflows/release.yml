@@ -47,9 +47,24 @@ jobs:
           name: ${{ env.ART }}
           path: ${{ env.ART }}
 
-  # Alternative SIMD build using Go's experimental archsimd intrinsics (amd64
-  # AVX2, GOEXPERIMENT=simd, Go 1.26+) — a different implementation from the
-  # default go-asmgen kernels above, kept for comparison. Bit-identical output.
+  # Alternative SIMD build using Go's experimental simd intrinsics (amd64 AVX2,
+  # GOEXPERIMENT=simd) — a different implementation from the default go-asmgen
+  # kernels above, kept for comparison. Bit-identical output.
+  #
+  # Pinned to 1.27.x, NOT 1.26.x. Go 1.27 redesigned this API: the fixed-lane
+  # types are gone (no Uint32x8 at all), replaced by width-agnostic Uint32s plus
+  # VectorBitSize() and Emulated(). blake3 was ported for it in v0.6.0 and this
+  # module now requires v0.7.0 — so 1.26 is the version that can no longer build
+  # this path. The pin had it backwards once the floor moved, and the job has
+  # been failing since: "go.mod requires go >= 1.27.1 (running go 1.26.8)".
+  #
+  # Why this failed loudly rather than lying: actions/setup-go@v7 exports
+  # GOTOOLCHAIN=local when a version is named, so go refuses a go.mod it is too
+  # old for instead of fetching one. Nothing in this repository sets it. The
+  # sibling go-deltasync/rdiff is still on setup-go@v5, which does not, and its
+  # job named "test (macos-latest / go1.22)" duly printed "Setup go version
+  # spec 1.22" and then "go version go1.27.1" -- six legs reporting support for
+  # versions nothing ran. Staying on v7 here is load-bearing.
   simd-experimental:
     name: simd-experimental linux/amd64
     runs-on: ubuntu-latest
@@ -57,7 +72,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.26.x'
+          go-version: '1.27.x'
           check-latest: true
       - name: Build (GOEXPERIMENT=simd)
         env:
@@ -76,7 +91,12 @@ jobs:
 
   # Publish all built binaries as a GitHub Release on the tag.
   publish:
-    needs: [stable, simd-experimental]
+    # NOT simd-experimental. That job is described below as "kept for
+    # comparison", and a comparison must never be able to stop a release.
+    # It did: v0.2.0 and v0.3.0 were tagged, 8 of 9 jobs were green,
+    # publish was SKIPPED, and neither version has a GitHub release or a
+    # single binary. See #13.
+    needs: [stable]
     runs-on: ubuntu-latest
     permissions:
       contents: write
